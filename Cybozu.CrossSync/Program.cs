@@ -100,8 +100,8 @@ namespace Cybozu.CrossSync
             RemoveInvalidCopiedEvents(firstSchedule, event1from2);
 
             // add new copied events
-            CopyValidEvents(secondSchedule, event1to2, settings.FirstPostfix);
-            CopyValidEvents(firstSchedule, event2to1, settings.SecondPostfix);
+            CopyValidEvents(secondSchedule, firstSchedule, event1to2, settings.FirstPostfix);
+            CopyValidEvents(firstSchedule, secondSchedule, event2to1, settings.SecondPostfix);
 
             settings.LastSynchronized = DateTime.Now.ToString("o");
             settings.Save();
@@ -199,7 +199,7 @@ namespace Cybozu.CrossSync
             schedule.RemoveEvents(idList);
         }
 
-        public static void CopyValidEvents(Schedule schedule, ScheduleEventCollection eventList, string postfix)
+        public static void CopyValidEvents(Schedule schedule, Schedule scheduleSrc, ScheduleEventCollection eventList, string postfix)
         {
             if (eventList.Count == 0) return;
 
@@ -209,6 +209,18 @@ namespace Cybozu.CrossSync
                 StringBuilder sb = new StringBuilder();
                 sb.Append(DescriptionHeaderName);
                 sb.AppendLine(Resources.CrossSyncDescription);
+                if (srcEvent.FacilityIds.Count > 0)
+                {
+                    sb.Append(Resources.FacilityHeader);
+                    string sep = "";
+                    foreach (string facilityId in srcEvent.FacilityIds)
+                    {
+                        sb.Append(sep);
+                        sep = ", ";
+                        sb.Append(scheduleSrc.Facilities[facilityId].Name);
+                    }
+                    sb.AppendLine();
+                }
                 if (!string.IsNullOrEmpty(srcEvent.Description))
                 {
                     sb.AppendLine();

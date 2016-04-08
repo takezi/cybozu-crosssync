@@ -159,12 +159,44 @@ namespace CBLabs.CybozuConnect
     {
     }
 
+    public class Facility
+    {
+        public string Key;
+        public string Version;
+        public string Name;
+        public string Description;
+        public string BelongFacilityGroup;
+
+        public Facility()
+        {
+        }
+
+        public Facility(XmlNode facilityNode)
+        {
+            this.Key = Utility.SafeAttribute(facilityNode, "key");
+            this.Version = Utility.SafeAttribute(facilityNode, "version");
+            this.Name = Utility.SafeAttribute(facilityNode, "name");
+            this.Description = Utility.SafeAttribute(facilityNode, "description");
+            this.BelongFacilityGroup = Utility.SafeAttribute(facilityNode, "belong_facility_group ");
+        }
+    }
+
+    public class FacilityCollection : KeyedCollection<string, Facility>
+    {
+        protected override string GetKeyForItem(Facility item)
+        {
+            return item.Key;
+        }
+    }
+    
     public class Schedule
     {
         public readonly App App;
         public readonly Base Base;
 
         public enum TargetType { User, Organization, Facility };
+
+        protected FacilityCollection facilities;
 
         public Schedule(App app)
         {
@@ -177,6 +209,34 @@ namespace CBLabs.CybozuConnect
             }
         }
 
+        public FacilityCollection Facilities
+        {
+            get
+            {
+                InitFacilities(false);
+                return this.facilities;
+            }
+        }
+
+        public void ReloadFacilities()
+        {
+            InitFacilities(true);
+        }
+
+        protected void InitFacilities(bool force)
+        {
+            if (!force && this.facilities != null) return;
+
+            XmlElement resultNode = this.App.QueryItems("Schedule", "ScheduleGetFacilityVersions", "ScheduleGetFacilitiesById", "facility_id", "facility_item");
+            XmlNodeList facilityList = resultNode.SelectNodes("//facility");
+
+            this.facilities = new FacilityCollection();
+            foreach (XmlNode facilityNode in facilityList)
+            {
+                this.facilities.Add(new Facility(facilityNode));
+            }
+        }
+        
         public ScheduleEventCollection GetEventsByTarget(DateTime start, DateTime end, TargetType targetType, string targetId)
         {
             if (string.IsNullOrEmpty(targetId))
