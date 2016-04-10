@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Windows.Forms;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using CBLabs.CybozuConnect;
 
@@ -9,7 +11,7 @@ namespace Cybozu.CrossSync
 {
     static class Program
     {
-        public const string DescriptionHeaderName = "# CrossSync: "; // Don't modify this.
+        public const string DescriptionHeaderName = "# CrossSync"; // Don't modify this.
 
         /// <summary>
         /// アプリケーションのメイン エントリ ポイントです。
@@ -91,9 +93,13 @@ namespace Cybozu.CrossSync
             ScheduleEventCollection event2from1 = new ScheduleEventCollection();
             GetEvents(secondApp, secondSchedule, settings.FirstPostfix, start, end, event2to1, event2from1);
 
+            // update modified events
+            UpadteModifiedEvents(secondSchedule, firstSchedule, event1to2, event2from1, settings.FirstPostfix);
+            UpadteModifiedEvents(firstSchedule, secondSchedule, event2to1, event1from2, settings.SecondPostfix);
+
             // remove not modified
-            UnsetNotModified(event1to2, event2to1, event2from1, settings.FirstPostfix);
-            UnsetNotModified(event2to1, event1to2, event1from2, settings.SecondPostfix);
+            // UnsetNotModified(event1to2, event2to1, event2from1, settings.FirstPostfix);
+            // UnsetNotModified(event2to1, event1to2, event1from2, settings.SecondPostfix);
 
             // remove old copied events
             RemoveInvalidCopiedEvents(secondSchedule, event2from1);
@@ -154,6 +160,37 @@ namespace Cybozu.CrossSync
             }
         }
 
+        public static void UpadteModifiedEvents(Schedule schedule, Schedule scheduleSrc, ScheduleEventCollection srcEventList, ScheduleEventCollection destEventList, string postfix)
+        {
+            Regex reg = new Regex(string.Format(@"^{0}\((?<id>\d*),(?<version>\d*)\): ", DescriptionHeaderName));
+
+            ScheduleEventCollection modifiedEventsList = new ScheduleEventCollection();
+            for (int i = destEventList.Count - 1; i >= 0; i--)
+            {
+                ScheduleEvent destEvent = destEventList[i];
+                Match match = reg.Match(destEvent.Description);
+
+                if (!match.Success) continue;
+                string savedId = match.Groups["id"].Value;
+                string savedVersion = match.Groups["version"].Value;
+
+                ScheduleEvent srcEvent = srcEventList.FirstOrDefault<ScheduleEvent>(elem => elem.ID == savedId && elem.Start.Date.Equals(destEvent.Start.Date));
+                if (srcEvent == null || srcEvent.Version == savedVersion) continue;
+
+                ScheduleEvent modifiedEvent = CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix);
+                modifiedEvent.ID = destEvent.ID;
+                modifiedEvent.Version = destEvent.Version;
+                modifiedEventsList.Add(modifiedEvent);
+
+                srcEventList.Remove(srcEvent);
+                destEventList.Remove(destEvent);
+            }
+
+            if (modifiedEventsList.Count == 0) return;
+
+            schedule.ModifyEvents(modifiedEventsList);
+        }
+        
         public static void UnsetNotModified(ScheduleEventCollection srcEventList, ScheduleEventCollection origEventList, ScheduleEventCollection destEventList, string postfix)
         {
             for (int i = srcEventList.Count - 1; i >= 0; i--)
@@ -206,46 +243,52 @@ namespace Cybozu.CrossSync
             ScheduleEventCollection newEventsList = new ScheduleEventCollection();
             foreach (ScheduleEvent srcEvent in eventList)
             {
-                StringBuilder sb = new StringBuilder();
-                sb.Append(DescriptionHeaderName);
-                sb.AppendLine(Resources.CrossSyncDescription);
-                sb.AppendLine(scheduleSrc.GetMobileViewURL(srcEvent));
-                if (srcEvent.FacilityIds.Count > 0)
-                {
-                    sb.Append(Resources.FacilityHeader);
-                    string sep = "";
-                    foreach (string facilityId in srcEvent.FacilityIds)
-                    {
-                        sb.Append(sep);
-                        sep = ", ";
-                        sb.Append(scheduleSrc.Facilities[facilityId].Name);
-                    }
-                    sb.AppendLine();
-                }
-                if (!string.IsNullOrEmpty(srcEvent.Description))
-                {
-                    sb.AppendLine();
-                    sb.Append(srcEvent.Description);
-                }
-
-                ScheduleEvent newEvent = new ScheduleEvent();
-                newEvent.EventType = srcEvent.IsBanner ? ScheduleEventType.Banner : ScheduleEventType.Normal;
-                newEvent.PublicType = srcEvent.IsPublic ? SchedulePublicType.Public : SchedulePublicType.Private;
-                newEvent.Start = srcEvent.Start;
-                newEvent.End = srcEvent.End;
-                newEvent.AllDay = srcEvent.AllDay;
-                newEvent.StartOnly = srcEvent.StartOnly;
-                newEvent.Plan = srcEvent.Plan;
-                newEvent.Detail = srcEvent.Detail + postfix;
-                newEvent.Description = sb.ToString();
-                newEvent.UserIds.Add(schedule.App.UserId);
-
-                newEventsList.Add(newEvent);
+                newEventsList.Add(CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix));
             }
 
             if (newEventsList.Count == 0) return;
 
             schedule.AddEvents(newEventsList);
+        }
+
+        public static ScheduleEvent CreateCopyEvent(Schedule schedule, Schedule scheduleSrc, ScheduleEvent srcEvent, string postfix)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(DescriptionHeaderName);
+            sb.Append(String.Format("({0},{1}): ", srcEvent.ID, srcEvent.Version));
+            sb.AppendLine(Resources.CrossSyncDescription);
+            sb.AppendLine(scheduleSrc.GetMobileViewURL(srcEvent));
+            if (srcEvent.FacilityIds.Count > 0)
+            {
+                sb.Append(Resources.FacilityHeader);
+                string sep = "";
+                foreach (string facilityId in srcEvent.FacilityIds)
+                {
+                    sb.Append(sep);
+                    sep = ", ";
+                    sb.Append(scheduleSrc.Facilities[facilityId].Name);
+                }
+                sb.AppendLine();
+            }
+            if (!string.IsNullOrEmpty(srcEvent.Description))
+            {
+                sb.AppendLine();
+                sb.Append(srcEvent.Description);
+            }
+
+            ScheduleEvent newEvent = new ScheduleEvent();
+            newEvent.EventType = srcEvent.IsBanner ? ScheduleEventType.Banner : ScheduleEventType.Normal;
+            newEvent.PublicType = srcEvent.IsPublic ? SchedulePublicType.Public : SchedulePublicType.Private;
+            newEvent.Start = srcEvent.Start;
+            newEvent.End = srcEvent.End;
+            newEvent.AllDay = srcEvent.AllDay;
+            newEvent.StartOnly = srcEvent.StartOnly;
+            newEvent.Plan = srcEvent.Plan;
+            newEvent.Detail = srcEvent.Detail + postfix;
+            newEvent.Description = sb.ToString();
+            newEvent.UserIds.Add(schedule.App.UserId);
+
+            return newEvent;
         }
 
         public static ScheduleEvent FindPairdEvent(ScheduleEvent srcEvent, ScheduleEventCollection eventList, string postfix)

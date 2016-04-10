@@ -344,6 +344,37 @@ namespace CBLabs.CybozuConnect
             }
         }
 
+        public ScheduleEventCollection ModifyEvents(ScheduleEventCollection scheduleEvents)
+        {
+            ListDictionary parameters = new ListDictionary();
+            ArrayList schedule_event_list = new ArrayList();
+            foreach (ScheduleEvent scheduleEvent in scheduleEvents)
+            {
+                ListDictionary schedule_event = CreateScheduleEventParam(scheduleEvent, true);
+                if (schedule_event == null) continue;
+                schedule_event_list.Add(schedule_event);
+            }
+            parameters["schedule_event"] = schedule_event_list;
+
+            XmlElement result = this.App.Exec("Schedule", "ScheduleModifyEvents", parameters);
+            XmlNodeList eventNodeList = result.SelectNodes("//schedule_event");
+
+            ScheduleEventCollection eventList = new ScheduleEventCollection();
+            foreach (XmlNode eventNode in eventNodeList)
+            {
+                try
+                {
+                    ScheduleEvent scheduleEvent = new ScheduleEvent(eventNode);
+                    eventList.Add(scheduleEvent);
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            return eventList;
+        }
+        
         protected ListDictionary CreateScheduleEventParam(ScheduleEvent scheduleEvent, bool modify)
         {
             if (scheduleEvent.EventType != ScheduleEventType.Normal && scheduleEvent.EventType != ScheduleEventType.Banner) return null;
