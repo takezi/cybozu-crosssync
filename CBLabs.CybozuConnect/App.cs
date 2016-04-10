@@ -9,10 +9,10 @@ using System.Xml;
 
 namespace CBLabs.CybozuConnect
 {
+    public enum CybozuType { Unknown, Office, Garoon, GaroonCloud };
+
     public class App
     {
-        public enum CybozuType { Unknown, Office, Garoon, GaroonCloud };
-
         protected string cybozuUrl;
         protected string cybozuUsername;
         protected string cybozuPassword;
@@ -73,6 +73,22 @@ namespace CBLabs.CybozuConnect
             get
             {
                 return this.user.ID;
+            }
+        }
+
+        public string CybozuUrl
+        {
+            get
+            {
+                return this.cybozuUrl;
+            }
+        }
+
+        public CybozuType CybozuType
+        {
+            get
+            {
+                return this.cybozuType;
             }
         }
 

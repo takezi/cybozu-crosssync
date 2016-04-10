@@ -461,5 +461,28 @@ namespace CBLabs.CybozuConnect
             }
             return when;
         }
+
+        public string GetMobileViewURL(ScheduleEvent scheduleEvent)
+        {
+            string url;
+            switch (App.CybozuType)
+            {
+                case CybozuType.Office:
+                    url = string.Format("{0}?page=mobile-schedule#event-{1}-{2}-{3}-{4}-{5}",
+                        App.CybozuUrl, App.UserId, scheduleEvent.Start.Year, scheduleEvent.Start.Month, scheduleEvent.Start.Day, scheduleEvent.ID);
+                    break;
+                case CybozuType.Garoon:
+                    url = string.Format("{0}/schedule/mobile/view.csp?event={1}&bdate={2}-{3:D2}-{4:D2}",
+                        App.CybozuUrl, scheduleEvent.ID, scheduleEvent.Start.Year, scheduleEvent.Start.Month, scheduleEvent.Start.Day);
+                    break;
+                case CybozuType.GaroonCloud:
+                    url = string.Format("{0}schedule/mobile/view.csp?event={1}&bdate={2}-{3:D2}-{4:D2}",
+                        App.CybozuUrl, scheduleEvent.ID, scheduleEvent.Start.Year, scheduleEvent.Start.Month, scheduleEvent.Start.Day);
+                    break;
+                default:
+                    throw new CybozuException("Unexpected");
+            }
+            return url;
+        }
     }
 }

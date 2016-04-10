@@ -209,6 +209,7 @@ namespace Cybozu.CrossSync
                 StringBuilder sb = new StringBuilder();
                 sb.Append(DescriptionHeaderName);
                 sb.AppendLine(Resources.CrossSyncDescription);
+                sb.AppendLine(scheduleSrc.GetMobileViewURL(srcEvent));
                 if (srcEvent.FacilityIds.Count > 0)
                 {
                     sb.Append(Resources.FacilityHeader);
