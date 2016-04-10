@@ -70,13 +70,13 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_086B4B3C691D4C13B634EF324B765A33"
+        "OwnerKey" = "8:_09FEF9D5331D4F6C8D8D3ED69E020106"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_09FEF9D5331D4F6C8D8D3ED69E020106"
+        "OwnerKey" = "8:_086B4B3C691D4C13B634EF324B765A33"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -87,7 +87,7 @@
         "DisplayName" = "8:Debug"
         "IsDebugOnly" = "11:TRUE"
         "IsReleaseOnly" = "11:FALSE"
-        "OutputFilename" = "8:Debug\\CrossSync-1.0.5.msi"
+        "OutputFilename" = "8:Debug\\CrossSync-1.0.6.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -124,7 +124,7 @@
         "DisplayName" = "8:Release"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:TRUE"
-        "OutputFilename" = "8:Release\\CrossSync-1.0.5.msi"
+        "OutputFilename" = "8:Release\\CrossSync-1.0.6.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -247,11 +247,6 @@
             "AssemblyAsmDisplayName" = "8:CBLabs.CybozuConnect, Version=1.0.5491.32387, Culture=neutral, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_09FEF9D5331D4F6C8D8D3ED69E020106"
-                    {
-                    "Name" = "8:CBLabs.CybozuConnect.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
             "SourcePath" = "8:CBLabs.CybozuConnect.dll"
             "TargetName" = "8:"
@@ -446,12 +441,12 @@
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.5"
+        "ProductVersion" = "8:1.0.6"
         "Manufacturer" = "8:Cybozu Labs"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
         "Title" = "8:Cybozu CrossSync Setup"
-        "Subject" = "8:Cybozu CrossSync 1.0.5"
+        "Subject" = "8:Cybozu CrossSync 1.0.6"
         "ARPCONTACT" = "8:Cybozu Labs, Inc."
         "Keywords" = "8:"
         "ARPCOMMENTS" = "8:"
