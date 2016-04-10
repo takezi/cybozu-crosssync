@@ -97,10 +97,6 @@ namespace Cybozu.CrossSync
             UpadteModifiedEvents(secondSchedule, firstSchedule, event1to2, event2from1, settings.FirstPostfix);
             UpadteModifiedEvents(firstSchedule, secondSchedule, event2to1, event1from2, settings.SecondPostfix);
 
-            // remove not modified
-            // UnsetNotModified(event1to2, event2to1, event2from1, settings.FirstPostfix);
-            // UnsetNotModified(event2to1, event1to2, event1from2, settings.SecondPostfix);
-
             // remove old copied events
             RemoveInvalidCopiedEvents(secondSchedule, event2from1);
             RemoveInvalidCopiedEvents(firstSchedule, event1from2);
@@ -191,33 +187,6 @@ namespace Cybozu.CrossSync
             schedule.ModifyEvents(modifiedEventsList);
         }
         
-        public static void UnsetNotModified(ScheduleEventCollection srcEventList, ScheduleEventCollection origEventList, ScheduleEventCollection destEventList, string postfix)
-        {
-            for (int i = srcEventList.Count - 1; i >= 0; i--)
-            {
-                ScheduleEvent srcEvent = srcEventList[i];
-
-                bool fromDest = false;
-                ScheduleEvent destEvent = FindPairdEvent(srcEvent, origEventList, string.Empty);
-                if (destEvent == null)
-                {
-                    destEvent = FindPairdEvent(srcEvent, destEventList, postfix);
-                    fromDest = true;
-                }
-                if (destEvent == null) continue;
-
-                srcEventList.Remove(srcEvent);
-                if (fromDest)
-                {
-                    destEventList.Remove(destEvent);
-                }
-                else
-                {
-                    origEventList.Remove(destEvent);
-                }
-            }
-        }
-
         public static void RemoveInvalidCopiedEvents(Schedule schedule, ScheduleEventCollection eventList)
         {
             if (eventList.Count == 0) return;
@@ -289,41 +258,6 @@ namespace Cybozu.CrossSync
             newEvent.UserIds.Add(schedule.App.UserId);
 
             return newEvent;
-        }
-
-        public static ScheduleEvent FindPairdEvent(ScheduleEvent srcEvent, ScheduleEventCollection eventList, string postfix)
-        {
-            string detail = srcEvent.Detail + postfix;
-
-            foreach (ScheduleEvent scheduleEvent in eventList)
-            {
-                // compare event type
-                if ((srcEvent.IsBanner && !scheduleEvent.IsBanner) || (!srcEvent.IsBanner && scheduleEvent.IsBanner)) continue;
-
-                // compare start date and time
-                if (!srcEvent.Start.Equals(scheduleEvent.Start)) continue;
-
-                // compare start only flag
-                if (srcEvent.StartOnly)
-                {
-                    if (!scheduleEvent.StartOnly) continue;
-                }
-                else
-                {
-                    if (scheduleEvent.StartOnly) continue;
-
-                    // compare end date and time
-                    if (!srcEvent.End.Equals(scheduleEvent.End)) continue;
-                }
-
-                // compare plan
-                if (srcEvent.Plan != scheduleEvent.Plan) continue;
-
-                // compare detail
-                if (detail == scheduleEvent.Detail) return scheduleEvent;
-            }
-
-            return null;
         }
     }
 }
