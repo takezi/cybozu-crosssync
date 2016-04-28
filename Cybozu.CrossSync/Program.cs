@@ -171,15 +171,19 @@ namespace Cybozu.CrossSync
                 string savedVersion = match.Groups["version"].Value;
 
                 ScheduleEvent srcEvent = srcEventList.FirstOrDefault<ScheduleEvent>(elem => elem.ID == savedId && elem.Start.Date.Equals(destEvent.Start.Date));
-                if (srcEvent == null || srcEvent.Version == savedVersion) continue;
+                if (srcEvent != null)
+                {
+                    if (srcEvent.Version != savedVersion)
+                    {
+                        ScheduleEvent modifiedEvent = CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix);
+                        modifiedEvent.ID = destEvent.ID;
+                        modifiedEvent.Version = destEvent.Version;
+                        modifiedEventsList.Add(modifiedEvent);
+                    }
 
-                ScheduleEvent modifiedEvent = CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix);
-                modifiedEvent.ID = destEvent.ID;
-                modifiedEvent.Version = destEvent.Version;
-                modifiedEventsList.Add(modifiedEvent);
-
-                srcEventList.Remove(srcEvent);
-                destEventList.Remove(destEvent);
+                    srcEventList.Remove(srcEvent);
+                    destEventList.Remove(destEvent);
+                }
             }
 
             if (modifiedEventsList.Count == 0) return;
