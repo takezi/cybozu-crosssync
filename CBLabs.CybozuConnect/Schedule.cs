@@ -187,6 +187,19 @@ namespace CBLabs.CybozuConnect
         {
             return item.Key;
         }
+
+        public Facility SearchFacility(string text)
+        {
+            foreach (Facility facility in this)
+            {
+                if (facility.Name == text)
+                {
+                    return facility;
+                }
+            }
+
+            return null;
+        }
     }
     
     public class Schedule
