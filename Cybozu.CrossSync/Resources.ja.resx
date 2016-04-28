@@ -126,8 +126,8 @@
   <data name="CrossSyncDescription" xml:space="preserve">
     <value>この予定は Cybozu CrossSync によって生成されました。（この行を消さないでください。）</value>
   </data>
-  <data name="FacilityNoSync" xml:space="preserve">
-    <value># 施設情報が正しくシンクできませんでした: </value>
+  <data name="FacilityHeader" xml:space="preserve">
+    <value>施設：</value>
   </data>
   <data name="GaroonLicenseExpires" xml:space="preserve">
     <value>サイボウズ ガルーンの試用期限、またはサービスライセンスの有効期限が切れています。

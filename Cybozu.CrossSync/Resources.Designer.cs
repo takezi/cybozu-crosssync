@@ -88,11 +88,11 @@ namespace Cybozu.CrossSync {
         }
         
         /// <summary>
-        ///   Facility information could not be properly sync. (Cybozu CrossSync) に類似しているローカライズされた文字列を検索します。
+        ///   Facilities:  に類似しているローカライズされた文字列を検索します。
         /// </summary>
-        internal static string FacilityNoSync {
+        internal static string FacilityHeader {
             get {
-                return ResourceManager.GetString("FacilityNoSync", resourceCulture);
+                return ResourceManager.GetString("FacilityHeader", resourceCulture);
             }
         }
         

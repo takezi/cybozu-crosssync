@@ -158,25 +158,6 @@ namespace Cybozu.CrossSync
 
         public static void UpadteModifiedEvents(Schedule schedule, Schedule scheduleSrc, ScheduleEventCollection srcEventList, ScheduleEventCollection destEventList, string postfix)
         {
-            try
-            {
-                UpadteModifiedEventsMain(schedule, scheduleSrc, srcEventList, destEventList, postfix, true);
-            }
-            catch (CybozuException e)
-            {
-                if (e.Code == "14312" || e.Code == "GRN_SCHD_13208")
-                {
-                    UpadteModifiedEventsMain(schedule, scheduleSrc, srcEventList, destEventList, postfix, false);
-                }
-                else
-                {
-                    throw;
-                }
-            }
-        }
-
-        public static void UpadteModifiedEventsMain(Schedule schedule, Schedule scheduleSrc, ScheduleEventCollection srcEventList, ScheduleEventCollection destEventList, string postfix, bool facilitySync)
-        {
             Regex reg = new Regex(string.Format(@"^{0}\((?<id>\d*),(?<version>\d*)\): ", DescriptionHeaderName));
 
             ScheduleEventCollection modifiedEventsList = new ScheduleEventCollection();
@@ -192,7 +173,7 @@ namespace Cybozu.CrossSync
                 ScheduleEvent srcEvent = srcEventList.FirstOrDefault<ScheduleEvent>(elem => elem.ID == savedId && elem.Start.Date.Equals(destEvent.Start.Date));
                 if (srcEvent == null || srcEvent.Version == savedVersion) continue;
 
-                ScheduleEvent modifiedEvent = CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix, facilitySync);
+                ScheduleEvent modifiedEvent = CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix);
                 modifiedEvent.ID = destEvent.ID;
                 modifiedEvent.Version = destEvent.Version;
                 modifiedEventsList.Add(modifiedEvent);
@@ -226,31 +207,12 @@ namespace Cybozu.CrossSync
 
         public static void CopyValidEvents(Schedule schedule, Schedule scheduleSrc, ScheduleEventCollection eventList, string postfix)
         {
-            try
-            {
-                CopyValidEventsMain(schedule, scheduleSrc, eventList, postfix, true);
-            }
-            catch (CybozuException e)
-            {
-                if (e.Code == "14312" || e.Code == "GRN_SCHD_13208")
-                {
-                    CopyValidEventsMain(schedule, scheduleSrc, eventList, postfix, false);
-                }
-                else
-                {
-                    throw;
-                }
-            }
-        }
-
-        public static void CopyValidEventsMain(Schedule schedule, Schedule scheduleSrc, ScheduleEventCollection eventList, string postfix, bool facilitySync)
-        {
             if (eventList.Count == 0) return;
 
             ScheduleEventCollection newEventsList = new ScheduleEventCollection();
             foreach (ScheduleEvent srcEvent in eventList)
             {
-                newEventsList.Add(CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix, facilitySync));
+                newEventsList.Add(CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix));
             }
 
             if (newEventsList.Count == 0) return;
@@ -258,13 +220,25 @@ namespace Cybozu.CrossSync
             schedule.AddEvents(newEventsList);
         }
 
-        public static ScheduleEvent CreateCopyEvent(Schedule schedule, Schedule scheduleSrc, ScheduleEvent srcEvent, string postfix, bool facilitySync)
+        public static ScheduleEvent CreateCopyEvent(Schedule schedule, Schedule scheduleSrc, ScheduleEvent srcEvent, string postfix)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(DescriptionHeaderName);
             sb.Append(String.Format("({0},{1}): ", srcEvent.ID, srcEvent.Version));
             sb.AppendLine(Resources.CrossSyncDescription);
             sb.AppendLine(scheduleSrc.GetMobileViewURL(srcEvent));
+            if (srcEvent.FacilityIds.Count > 0)
+            {
+                sb.Append(Resources.FacilityHeader);
+                string sep = "";
+                foreach (string facilityId in srcEvent.FacilityIds)
+                {
+                    sb.Append(sep);
+                    sep = ", ";
+                    sb.Append(scheduleSrc.Facilities[facilityId].Name);
+                }
+                sb.AppendLine();
+            }
             if (!string.IsNullOrEmpty(srcEvent.Description))
             {
                 sb.AppendLine();
@@ -280,32 +254,6 @@ namespace Cybozu.CrossSync
             newEvent.StartOnly = srcEvent.StartOnly;
             newEvent.Plan = srcEvent.Plan;
             newEvent.Detail = srcEvent.Detail + postfix;
-            if (srcEvent.FacilityIds.Count > 0)
-            {
-                if (facilitySync)
-                {
-                    foreach (string facilityId in srcEvent.FacilityIds)
-                    {
-                        Facility facility = schedule.Facilities.SearchFacility(scheduleSrc.Facilities[facilityId].Name);
-                        if (facility != null)
-                        {
-                            newEvent.FacilityIds.Add(facility.Key);
-                        }
-                    }
-                }
-                else
-                {
-                    sb.AppendLine();
-                    sb.Append(Resources.FacilityNoSync);
-                    string sep = "";
-                    foreach (string facilityId in srcEvent.FacilityIds)
-                    {
-                        sb.Append(sep);
-                        sep = ", ";
-                        sb.Append(scheduleSrc.Facilities[facilityId].Name);
-                    }
-                }
-            }
             newEvent.Description = sb.ToString();
             newEvent.UserIds.Add(schedule.App.UserId);
 

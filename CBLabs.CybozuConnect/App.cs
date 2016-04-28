@@ -167,32 +167,19 @@ namespace CBLabs.CybozuConnect
                     throw new CybozuException("Unexpected");
             }
 
-            HttpWebResponse response = null;
-            try
-            {
-                WebRequest request = WebRequest.Create(url);
-                request.Method = "POST";
-                request.ContentType = string.Format("application/soap+xml; charset=utf-8; action=\"{0}\"", method);
-                string requestXmlString = requestXml.ToString();
-                byte[] bytes = Encoding.UTF8.GetBytes(requestXmlString);
-                Stream requestStream = request.GetRequestStream();
-                requestStream.Write(bytes, 0, bytes.Length);
-                requestStream.Close();
+            WebRequest request = WebRequest.Create(url);
+            request.Method = "POST";
+            request.ContentType = string.Format("application/soap+xml; charset=utf-8; action=\"{0}\"", method);
+            string requestXmlString = requestXml.ToString();
+            byte[] bytes = Encoding.UTF8.GetBytes(requestXmlString);
+            Stream requestStream = request.GetRequestStream();
+            requestStream.Write(bytes, 0, bytes.Length);
+            requestStream.Close();
 
-                response = (HttpWebResponse)request.GetResponse();
-                if (response.StatusCode != HttpStatusCode.OK)
-                {
-                    throw new CybozuException("Network error.");
-                }
-            }
-            catch (WebException ex)
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            if (response.StatusCode != HttpStatusCode.OK)
             {
-                // 520は成功扱いにしてXMLをパースする
-                response = (HttpWebResponse)ex.Response;
-                if (response == null || (int)response.StatusCode != 520)
-                {
-                    throw;
-                }
+                throw new CybozuException("Network error.");
             }
 
             Stream responseStream = response.GetResponseStream();

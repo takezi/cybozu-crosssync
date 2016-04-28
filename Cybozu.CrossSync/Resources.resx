@@ -126,8 +126,8 @@
   <data name="CrossSyncDescription" xml:space="preserve">
     <value>This event is created by Cybozu CrossSync. (Don't remove ths line.)</value>
   </data>
-  <data name="FacilityNoSync" xml:space="preserve">
-    <value>Facility information could not be properly sync: </value>
+  <data name="FacilityHeader" xml:space="preserve">
+    <value>Facilities: </value>
   </data>
   <data name="GaroonLicenseExpires" xml:space="preserve">
     <value>The trial period, or the expiration date of the service license of Cybozu Garoon has expired.
