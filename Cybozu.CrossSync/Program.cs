@@ -275,10 +275,11 @@ namespace Cybozu.CrossSync
                 bool facilityFallback = !facilitySync;
                 if (facilitySync)
                 {
+                    bool forceFacilitySync = System.IO.File.Exists("\\forceFacilitySync.txt");  // not check a facility description. for test only
                     foreach (string facilityId in srcEvent.FacilityIds)
                     {
                         string facilityName = scheduleSrc.Facilities[facilityId].Name;
-                        string userName = schedule.App.User.Name;
+                        string userName = forceFacilitySync ? "" : schedule.App.User.Name;
                         Facility facility = schedule.Facilities.FirstOrDefault(elem => elem.Name == facilityName && elem.Description.IndexOf(userName) == 0);
                         if (facility != null)
                         {
