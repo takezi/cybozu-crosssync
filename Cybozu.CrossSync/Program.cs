@@ -158,6 +158,25 @@ namespace Cybozu.CrossSync
 
         public static void UpadteModifiedEvents(Schedule schedule, Schedule scheduleSrc, ScheduleEventCollection srcEventList, ScheduleEventCollection destEventList, string postfix)
         {
+            try
+            {
+                UpadteModifiedEventsMain(schedule, scheduleSrc, srcEventList, destEventList, postfix, true);
+            }
+            catch (CybozuException e)
+            {
+                if (e.Code == "14312" || e.Code == "GRN_SCHD_13208")
+                {
+                    UpadteModifiedEventsMain(schedule, scheduleSrc, srcEventList, destEventList, postfix, false);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        public static void UpadteModifiedEventsMain(Schedule schedule, Schedule scheduleSrc, ScheduleEventCollection srcEventList, ScheduleEventCollection destEventList, string postfix, bool facilitySync)
+        {
             Regex reg = new Regex(string.Format(@"^{0}\((?<id>\d*),(?<version>\d*)\): ", DescriptionHeaderName));
 
             ScheduleEventCollection modifiedEventsList = new ScheduleEventCollection();
@@ -175,7 +194,7 @@ namespace Cybozu.CrossSync
                 {
                     if (srcEvent.Version != savedVersion)
                     {
-                        ScheduleEvent modifiedEvent = CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix);
+                        ScheduleEvent modifiedEvent = CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix, facilitySync);
                         modifiedEvent.ID = destEvent.ID;
                         modifiedEvent.Version = destEvent.Version;
                         modifiedEventsList.Add(modifiedEvent);
@@ -211,12 +230,31 @@ namespace Cybozu.CrossSync
 
         public static void CopyValidEvents(Schedule schedule, Schedule scheduleSrc, ScheduleEventCollection eventList, string postfix)
         {
+            try
+            {
+                CopyValidEventsMain(schedule, scheduleSrc, eventList, postfix, true);
+            }
+            catch (CybozuException e)
+            {
+                if (e.Code == "14312" || e.Code == "GRN_SCHD_13208")
+                {
+                    CopyValidEventsMain(schedule, scheduleSrc, eventList, postfix, false);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        public static void CopyValidEventsMain(Schedule schedule, Schedule scheduleSrc, ScheduleEventCollection eventList, string postfix, bool facilitySync)
+        {
             if (eventList.Count == 0) return;
 
             ScheduleEventCollection newEventsList = new ScheduleEventCollection();
             foreach (ScheduleEvent srcEvent in eventList)
             {
-                newEventsList.Add(CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix));
+                newEventsList.Add(CreateCopyEvent(schedule, scheduleSrc, srcEvent, postfix, facilitySync));
             }
 
             if (newEventsList.Count == 0) return;
@@ -224,8 +262,9 @@ namespace Cybozu.CrossSync
             schedule.AddEvents(newEventsList);
         }
 
-        public static ScheduleEvent CreateCopyEvent(Schedule schedule, Schedule scheduleSrc, ScheduleEvent srcEvent, string postfix)
+        public static ScheduleEvent CreateCopyEvent(Schedule schedule, Schedule scheduleSrc, ScheduleEvent srcEvent, string postfix, bool facilitySync)
         {
+            ScheduleEvent newEvent = new ScheduleEvent();
             StringBuilder sb = new StringBuilder();
             sb.Append(DescriptionHeaderName);
             sb.Append(String.Format("({0},{1}): ", srcEvent.ID, srcEvent.Version));
@@ -233,15 +272,37 @@ namespace Cybozu.CrossSync
             sb.AppendLine(scheduleSrc.GetMobileViewURL(srcEvent));
             if (srcEvent.FacilityIds.Count > 0)
             {
-                sb.Append(Resources.FacilityHeader);
-                string sep = "";
-                foreach (string facilityId in srcEvent.FacilityIds)
+                bool facilityFallback = !facilitySync;
+                if (facilitySync)
                 {
-                    sb.Append(sep);
-                    sep = ", ";
-                    sb.Append(scheduleSrc.Facilities[facilityId].Name);
+                    foreach (string facilityId in srcEvent.FacilityIds)
+                    {
+                        string facilityName = scheduleSrc.Facilities[facilityId].Name;
+                        string userName = schedule.App.User.Name;
+                        Facility facility = schedule.Facilities.FirstOrDefault(elem => elem.Name == facilityName && elem.Description.IndexOf(userName) == 0);
+                        if (facility != null)
+                        {
+                            newEvent.FacilityIds.Add(facility.Key);
+                        }
+                        else
+                        {
+                            facilityFallback = true;
+                            break;
+                        }
+                    }
                 }
-                sb.AppendLine();
+                if (facilityFallback)
+                {
+                    sb.Append(Resources.FacilityHeader);
+                    string sep = "";
+                    foreach (string facilityId in srcEvent.FacilityIds)
+                    {
+                        sb.Append(sep);
+                        sep = ", ";
+                        sb.Append(scheduleSrc.Facilities[facilityId].Name);
+                    }
+                    sb.AppendLine();
+                }
             }
             if (!string.IsNullOrEmpty(srcEvent.Description))
             {
@@ -249,7 +310,6 @@ namespace Cybozu.CrossSync
                 sb.Append(srcEvent.Description);
             }
 
-            ScheduleEvent newEvent = new ScheduleEvent();
             newEvent.EventType = srcEvent.IsBanner ? ScheduleEventType.Banner : ScheduleEventType.Normal;
             newEvent.PublicType = srcEvent.IsPublic ? SchedulePublicType.Public : SchedulePublicType.Private;
             newEvent.Start = srcEvent.Start;
